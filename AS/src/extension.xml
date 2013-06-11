@@ -1,0 +1,19 @@
+<extension xmlns="http://ns.adobe.com/air/extension/3.1">
+  <id>com.palDeveloppers.ane.MediaPlayer</id>
+  <versionNumber>1.0.0</versionNumber>
+  <platforms>
+    <platform name="Android-ARM">
+            <applicationDeployment>
+				<nativeLibrary>libMediaPlayer.jar</nativeLibrary>
+                <initializer>com.palDeveloppers.ane.MediaPlayerExtension</initializer>
+                <finalizer>com.palDeveloppers.ane.MediaPlayerExtension</finalizer>
+            </applicationDeployment>
+    </platform>
+    <platform name="iPhone-ARM">
+            <applicationDeployment/>
+    </platform>
+    <platform name="default"> 
+        <applicationDeployment/> 
+    </platform> 
+  </platforms>
+</extension>
