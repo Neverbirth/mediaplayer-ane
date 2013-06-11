@@ -1,0 +1,105 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project name="ANE" default="compile">
+
+	<!-- Load variables -->
+	<property file="build.properties"/>
+
+	<!-- Clean binaries folder -->
+	<target name="cleanBinaries">
+		<delete dir="${BINARIES_FOLDER}"/>
+		<mkdir dir="${BINARIES_FOLDER}"/>
+		<mkdir dir="${BINARIES_FOLDER}/Default"/>
+		<mkdir dir="${BINARIES_FOLDER}/iOS"/>
+		<mkdir dir="${BINARIES_FOLDER}/Android"/>
+	</target>
+	
+	<!-- Build SWC library -->
+	<target name="buildSwc" depends="cleanBinaries">
+		<fileset dir="AS/src" casesensitive="yes" id="classfiles">
+			<include name="**/*.as"/>
+		</fileset>
+
+		<pathconvert property="classlist" refid="classfiles" pathsep=" " dirsep=".">
+			<regexpmapper from=".*src.(.*)\.as" to="\1"/>
+		</pathconvert>
+		
+		<exec executable="${AIR_SDK_PATH}/bin/compc.exe" failonerror="true">
+			<arg line='-source-path AS/src'/>
+			<arg line='-output ${SWC_PATH}'/>
+			<arg line='-swf-version=14'/>
+			<arg line='-external-library-path+="${AIR_SDK_PATH}/frameworks/libs/air/airglobal.swc"'/>
+			<arg line='-include-classes ${classlist}'/>
+		</exec>
+	</target>
+
+    <!-- Android -->
+    <target name="android" depends="buildSwc">
+        <delete dir="NativeAndroid/temp"/>
+        <mkdir dir="NativeAndroid/temp/classes"/>
+
+        <echo message="Using Java version ${ant.java.version}."/>
+
+        <javac source="1.6" srcdir="NativeAndroid/src" destdir="NativeAndroid/temp/classes" includeantruntime="false">
+            <classpath>
+                <pathelement location="${ANDROID_SDK_PATH}/android.jar"/>
+                <pathelement location="${FRE.JAR}"/>
+                <pathelement location="NativeAndroid/libs/android-support-v4.jar"/>
+            </classpath>
+        </javac>
+
+        <!-- <mkdir dir="../android/temp/zip"/>
+        <unzip src="../android/libs/android-support-v4.jar" dest="../android/temp/zip"/>
+        <unzip src="../android/libs/annotations.jar" dest="../android/temp/zip"/>
+        <copydir src="../android/temp/zip/android" dest="../android/temp/classes/android"/> -->
+
+        <mkdir dir="${BINARIES_FOLDER}/Android/"/>
+        <jar basedir="NativeAndroid/temp/classes" destfile="${BINARIES_FOLDER}/Android/lib${PROJECT_NAME}.jar"/>
+        <copy todir="${BINARIES_FOLDER}/Android/res/">
+            <fileset dir="NativeAndroid/res"/>
+        </copy>
+        <delete dir="NativeAndroid/temp"/>
+    </target>
+
+	<!-- Unzip SWF file and copy it to binaries folders -->
+	<target name="unzipSwf" depends="android">
+	    <mkdir dir="temp"/>
+		<unzip src="${SWC_PATH}" dest="temp"/>
+		<copy file="temp/library.swf" todir="${BINARIES_FOLDER}/Default"/>
+		<copy file="temp/library.swf" todir="${BINARIES_FOLDER}/iOS"/>
+		<copy file="temp/library.swf" todir="${BINARIES_FOLDER}/Android"/>
+		<delete dir="temp"/>
+	</target>
+
+    <!-- Package -->
+	<target name="compile" depends="unzipSwf">
+		<java jar="${ADT.JAR}" fork="true" failonerror="true">
+            <arg value="-package"/>
+            <arg value="-target"/>
+			<arg value="ane"/>
+			<arg value="${ANE_PATH}"/>
+			<arg value="${EXTENSION.XML}"/>
+			
+			<arg value="-swc"/>
+			<arg value="${SWC_PATH}"/>
+			
+            <arg value="-platform"/>
+			<arg value="iPhone-ARM"/>
+			<arg value="-C"/>
+			<arg value="${BINARIES_FOLDER}/iOS/"/>
+			<arg value="."/>
+
+            <arg value="-platform"/>
+			<arg value="Android-ARM"/>
+			<arg value="-C"/>
+			<arg value="${BINARIES_FOLDER}/Android/"/>
+			<arg value="."/>
+			
+			<arg value="-platform"/>
+			<arg value="default"/>
+			<arg value="-C"/>
+			<arg value="${BINARIES_FOLDER}/Default"/>
+			<arg value="library.swf"/>
+        </java>
+    </target>
+
+</project>
